@@ -1,4 +1,4 @@
-# Notodo | Productivity Manager
+# NOTODO APP 
 
 **Notodo** is a comprehensive productivity application designed to streamline daily tasks and thought organization. Built with the MERN stack, it offers a seamless, mobile-responsive experience with secure authentication and real-time database synchronization.
 
@@ -60,3 +60,6 @@ The backend is hosted on a free-tier server. If the application has not been acc
 
 ---
 
+***Uploading Imgs Soon !!!!***
+
+---
