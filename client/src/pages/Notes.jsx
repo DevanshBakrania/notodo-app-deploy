@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import API from '../api';
-import { FaPlus, FaSearch, FaFilter, FaTrash, FaEdit } from 'react-icons/fa';
+import { FaPlus, FaSearch, FaFilter, FaTrash, FaEdit, FaThumbtack } from 'react-icons/fa';
 import { toast } from 'react-hot-toast';
 
 const Notes = () => {
@@ -40,17 +40,37 @@ const Notes = () => {
       if (editingId) {
         const { data } = await API.put(`/notes/${editingId}`, formData);
         setNotes(notes.map(n => n._id === editingId ? data : n));
-        toast.success('Note updated successfully!'); 
+        toast.success('Note updated!'); 
       } else {
         const { data } = await API.post('/notes', formData);
         setNotes([data, ...notes]);
-        toast.success('Note created successfully!'); 
+        toast.success('Note created!'); 
       }
       setFormData({ title: '', content: '', category: 'General' });
       setEditingId(null);
       setShowForm(false);
     } catch (err) { 
       toast.error('Error saving note'); 
+    }
+  };
+
+  const handleTogglePin = async (e, note) => {
+    e.stopPropagation(); // Stop the card click event
+    try {
+        const updatedStatus = !note.isPinned;
+        // Optimistic update (update UI instantly before server responds)
+        const updatedNotes = notes.map(n => 
+            n._id === note._id ? { ...n, isPinned: updatedStatus } : n
+        );
+        setNotes(updatedNotes);
+
+        // Send to server
+        await API.put(`/notes/${note._id}`, { ...note, isPinned: updatedStatus });
+        
+        if(updatedStatus) toast.success('Note pinned!');
+    } catch (err) {
+        toast.error('Failed to update pin');
+        fetchData(); // Revert on error
     }
   };
 
@@ -73,29 +93,34 @@ const Notes = () => {
     }
   };
 
-  const filteredNotes = notes.filter(note => {
-    const matchesSearch = note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          note.content.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    let matchesCategory = true;
-    if (categoryFilter !== 'All') {
-      matchesCategory = (note.category || 'General') === categoryFilter;
-    }
-
-    return matchesSearch && matchesCategory;
-  });
+  // Filter AND Sort (Pinned First)
+  const processedNotes = notes
+    .filter(note => {
+        const matchesSearch = note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                              note.content.toLowerCase().includes(searchQuery.toLowerCase());
+        let matchesCategory = true;
+        if (categoryFilter !== 'All') {
+        matchesCategory = (note.category || 'General') === categoryFilter;
+        }
+        return matchesSearch && matchesCategory;
+    })
+    .sort((a, b) => {
+        // Sort logic: Pinned notes come first (-1), Unpinned come last (1)
+        if (a.isPinned === b.isPinned) return 0; // If both match, keep date order
+        return a.isPinned ? -1 : 1;
+    });
 
   return (
-    <div className="p-8 max-w-6xl mx-auto min-h-screen">
+    <div className="p-4 sm:p-8 max-w-6xl mx-auto min-h-screen">
     
       <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
         <div>
-          <h1 className="text-4xl font-bold text-gray-800 tracking-tight">Notes</h1>
+          <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 tracking-tight">Notes</h1>
           <p className="text-gray-500 mt-1">Capture your ideas</p>
         </div>
         <button 
           onClick={() => setShowForm(!showForm)} 
-          className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-full font-semibold shadow-lg shadow-blue-200 transition-all transform hover:-translate-y-1 flex items-center gap-2"
+          className="bg-blue-600 hover:bg-blue-700 text-white px-6 sm:px-8 py-3 rounded-full font-semibold shadow-lg shadow-blue-200 transition-all transform hover:-translate-y-1 flex items-center gap-2"
         >
           <FaPlus /> {showForm ? 'Close' : 'Create Note'}
         </button>
@@ -130,7 +155,7 @@ const Notes = () => {
       </div>
 
       {showForm && (
-        <form onSubmit={handleSaveNote} className="bg-white p-6 rounded-3xl shadow-xl mb-8 border border-gray-100 ring-1 ring-blue-100">
+        <form onSubmit={handleSaveNote} className="bg-white p-6 rounded-3xl shadow-xl mb-8 border border-gray-100 ring-1 ring-blue-100 animate-fade-in-down">
           <h2 className="text-xl font-bold text-gray-700 mb-4">{editingId ? 'Edit Note' : 'Create New Note'}</h2>
           
           <input 
@@ -173,7 +198,7 @@ const Notes = () => {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredNotes.length === 0 ? (
+        {processedNotes.length === 0 ? (
            <div className="col-span-full flex flex-col items-center justify-center py-20 bg-white/50 rounded-3xl border-2 border-dashed border-gray-200">
              <div className="w-20 h-20 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center text-3xl mb-4">
                💡
@@ -182,9 +207,21 @@ const Notes = () => {
              <p className="text-gray-400 mt-1">Have an idea? Write it down!</p>
            </div>
         ) : (
-          filteredNotes.map((note) => (
-            <div key={note._id} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 hover:shadow-md transition-all group relative">
-                <h3 className="font-bold text-gray-800 text-lg mb-2">{note.title}</h3>
+          processedNotes.map((note) => (
+            <div key={note._id} className={`bg-white p-6 rounded-2xl shadow-sm border hover:shadow-md transition-all group relative ${note.isPinned ? 'border-blue-300 ring-1 ring-blue-100' : 'border-gray-200'}`}>
+                
+                {/* Header with Title and Pin Button */}
+                <div className="flex justify-between items-start mb-2">
+                    <h3 className="font-bold text-gray-800 text-lg flex-1 mr-2">{note.title}</h3>
+                    <button 
+                        onClick={(e) => handleTogglePin(e, note)}
+                        className={`text-lg transition-colors ${note.isPinned ? 'text-blue-600 rotate-45' : 'text-gray-300 hover:text-gray-500'}`}
+                        title={note.isPinned ? "Unpin Note" : "Pin Note"}
+                    >
+                        <FaThumbtack />
+                    </button>
+                </div>
+
                 <p className="text-gray-600 text-sm line-clamp-4 leading-relaxed whitespace-pre-wrap">{note.content}</p>
                 
                 <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-100">
@@ -192,7 +229,7 @@ const Notes = () => {
                     {note.category || 'General'}
                   </span>
                   
-                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
                     <button onClick={() => handleEditClick(note)} className="p-2 text-gray-400 hover:text-blue-600 rounded-full hover:bg-blue-50 transition">
                         <FaEdit />
                     </button>
