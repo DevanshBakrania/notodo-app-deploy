@@ -60,11 +60,3 @@ The backend is hosted on a free-tier server. If the application has not been acc
 
 ---
 
-## Local Installation Guide
-
-If you wish to run this project locally, follow these steps:
-
-**1. Clone the Repository**
-```bash
-git clone [https://github.com/DevanshBakrania/notodo-app-deploy.git](https://github.com/DevanshBakrania/notodo-app-deploy.git)
-cd notodo-app-deploy
