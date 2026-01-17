@@ -8,7 +8,6 @@ const taskRoutes = require('./routes/tasks');
 const noteRoutes = require('./routes/notes');
 const dashboardRoutes = require('./routes/dashboard');
 const categoryRoutes = require('./routes/categories');
-const cors = require('cors');
 
 const app = express();
 app.use(express.json()); 
