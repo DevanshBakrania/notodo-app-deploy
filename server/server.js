@@ -8,10 +8,15 @@ const taskRoutes = require('./routes/tasks');
 const noteRoutes = require('./routes/notes');
 const dashboardRoutes = require('./routes/dashboard');
 const categoryRoutes = require('./routes/categories');
+const cors = require('cors');
 
 const app = express();
 app.use(express.json()); 
-app.use(cors());
+app.use(cors({
+  origin: '*', // Allow ALL origins (Vercel, localhost, phone, etc.)
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/tasks', taskRoutes);
